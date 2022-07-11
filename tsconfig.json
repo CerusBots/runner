@@ -1,0 +1,31 @@
+{
+  "compilerOptions": {
+    "lib": ["es2018"],
+    "module": "commonjs",
+    "target": "es6",
+    "moduleResolution": "node",
+    "allowJs": true,
+    "strict": true,
+    "outDir": "dist",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "esModuleInterop": true,
+    "noImplicitAny": true,
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "sourceMap": true,
+    "baseUrl": ".",
+    "declaration": true,
+    "declarationDir": "typings",
+    "types": ["@types/node"],
+    "paths": {
+      "*": ["node_modules/*"],
+      "~/*": ["./src/*"]
+    }
+  },
+  "exclude": ["node_modules/*"],
+  "include": ["src", "types"],
+  "ts-node": {
+    "files": true
+  }
+}

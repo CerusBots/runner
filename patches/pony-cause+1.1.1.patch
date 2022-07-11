@@ -1,0 +1,13 @@
+diff --git a/node_modules/pony-cause/index.d.ts b/node_modules/pony-cause/index.d.ts
+index ec14b1d..160ee34 100644
+--- a/node_modules/pony-cause/index.d.ts
++++ b/node_modules/pony-cause/index.d.ts
+@@ -2,7 +2,7 @@ export class ErrorWithCause<T = undefined> extends Error {
+     constructor(message: string, { cause }?: {
+         cause?: T;
+     } | undefined);
+-    cause: T;
++    cause: T | undefined | unknown | any;
+ }
+ export function findCauseByReference<T extends Error>(err: unknown, reference: new (...args: any[]) => T): T | undefined;
+ export function getErrorCause(err: Error | {

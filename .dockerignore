@@ -1,0 +1,10 @@
+.gitignore
+.gitmodules
+node_modules
+dist
+commitlint.config.cjs
+.husky
+submodules/common/dist
+typings
+.husky/_
+deploy

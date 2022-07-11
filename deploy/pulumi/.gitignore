@@ -1,0 +1,3 @@
+.pulumi/
+configs/
+Pulumi.dev.yaml

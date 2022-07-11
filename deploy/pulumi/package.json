@@ -1,0 +1,27 @@
+{
+  "name": "@cerusbots/runner-pulumi",
+  "private": "true",
+  "version": "0.1.0",
+  "description": "",
+  "scripts": {
+    "build": "tsc",
+    "lint:js": "eslint --ext \".ts\" --ignore-path .gitignore .",
+    "lint:prettier": "prettier --check .",
+    "lint": "npm run lint:js && npm run lint:prettier"
+  },
+  "author": "Tristan Ross",
+  "license": "GPL-3.0",
+  "devDependencies": {
+    "@types/node": "^18.0.0",
+    "@typescript-eslint/eslint-plugin": "^5.30.3",
+    "@typescript-eslint/parser": "^5.30.3",
+    "eslint": "^8.19.0",
+    "prettier": "^2.7.1"
+  },
+  "dependencies": {
+    "@pulumi/kubernetes": "^3.19.4",
+    "@pulumi/pulumi": "^3.35.3",
+    "deepmerge": "^4.2.2",
+    "yaml": "^2.1.1"
+  }
+}
