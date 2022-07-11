@@ -2,6 +2,7 @@ import { ok as assert } from 'assert'
 import Emittery from 'emittery'
 import { hostname } from 'os'
 import { getPodType } from './kube/pod'
+import winston from './providers/winston'
 import { DI } from './di'
 import { RecordMetadata } from 'kafkajs'
 
@@ -52,21 +53,27 @@ export default async function createIPC(): Promise<IPCInstance> {
     target: string,
     obj?: object
   ) => {
-    return await producer.send({
+    const message: IPCMessage = {
+      type,
+      target,
+      id: nextID++,
+      isRequest,
+      ...(obj || {}),
+    }
+
+    const sent = await producer.send({
       topic: 'cerus-runner',
       messages: [
         {
-          value: JSON.stringify({
-            type,
-            target,
-            id: nextID++,
-            isRequest,
-            ...(obj || {}),
-          }),
+          value: JSON.stringify(message),
           key: self.id,
         },
       ],
     })
+    winston.debug(
+      `sent message ${sent[0].baseOffset} for ${target}, we are ${self.id}`
+    )
+    return sent
   }
 
   const consumer = DI.kafka.consumer({
@@ -75,8 +82,7 @@ export default async function createIPC(): Promise<IPCInstance> {
   })
   await consumer.connect()
 
-  await consumer.subscribe({ topic: 'cerus-runner' })
-  await consumer.subscribe({ topic: self.id })
+  await consumer.subscribe({ topic: 'cerus-runner', fromBeginning: true })
   await consumer.run({
     eachMessage: async ({ topic, message }) => {
       assert(
@@ -85,11 +91,13 @@ export default async function createIPC(): Promise<IPCInstance> {
       const body = JSON.parse(message.value.toString('ascii')) as IPCMessage
       const sender = message.key?.toString('ascii')
 
+      winston.debug(
+        `receiving message ${message.offset} from ${sender} for ${body.target} and we are ${self.id}`
+      )
       if (sender == self.id) return void 0
       if (body.target !== self.id) return void 0
 
       self.emit('raw', body)
-      console.log(body, topic, sender)
 
       if (body.isRequest) {
         try {
@@ -99,13 +107,15 @@ export default async function createIPC(): Promise<IPCInstance> {
                 throw new Error('Unsupported request')
               }
 
-              self.send('bots:discover', false, topic, {
-                items: [],
-              })
+              self
+                .send('bots:discover', false, sender, {
+                  items: [],
+                })
+                .catch((e) => winston.error(e))
               break
           }
         } catch (e) {
-          self.send(body.type, false, topic)
+          self.send(body.type, false, sender)
         }
       } else {
         const isError = 'error' in body
@@ -126,7 +136,6 @@ export default async function createIPC(): Promise<IPCInstance> {
   self.discoverBots = async (target) => {
     await self.send('bots:discover', true, target)
     const resp = await self.once('bots:discover')
-    console.log(resp)
     if (Array.isArray(resp)) return resp
     throw resp
   }

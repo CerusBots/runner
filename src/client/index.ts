@@ -13,14 +13,15 @@ async function waitForClient(name: string) {
     const isReady =
       typeof body.status === 'object' &&
       typeof body.status.containerStatuses === 'object'
-        ? body.status.containerStatuses.findIndex((stat) => stat.ready) > -1
+        ? body.status.containerStatuses.findIndex((stat) => stat.ready) > -1 &&
+          body.status.phase === 'Running'
         : false
     return isReady
   }
 
   const sleep = () =>
     new Promise<boolean>((resolve, reject) =>
-      setTimeout(() => wait().then(resolve).catch(reject), 600)
+      setTimeout(() => wait().then(resolve).catch(reject), 10000)
     )
   while (!isReady) isReady = await sleep()
 }

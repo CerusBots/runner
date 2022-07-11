@@ -12,6 +12,7 @@ export default async function initController() {
       pod.metadata.annotations['runner.cerusbots.com/type'] === 'controller'
     )
   })
+  console.log(controllers)
 
   const clients = pods.filter((pod) => {
     if (typeof pod.metadata !== 'object') return false
@@ -20,6 +21,7 @@ export default async function initController() {
   })
 
   if (clients.length === 0) clients.push(await spawnClient())
+  console.log(clients)
 
   const bots = Object.fromEntries(
     await Promise.all(
@@ -29,5 +31,5 @@ export default async function initController() {
       ])
     )
   ) as Record<string, string[]>
-  console.log(bots, controllers, clients)
+  console.log(bots)
 }
