@@ -1,5 +1,9 @@
+import { ok as assert } from 'assert'
 import { hostname } from 'os'
+import { BotRunnerResource } from '@cerusbots/common/dist/k8s'
 import { getPodType, getCurrentPod } from '../kube/pod'
+import { createRunner } from '../kube/runner'
+import winston from '../providers/winston'
 import config from '../config'
 import { DI } from '../di'
 
@@ -59,5 +63,26 @@ export async function spawnClient() {
   ).body
 
   await waitForClient(client.metadata?.name as string)
-  return client
+  return (
+    await DI.k8s.api.core.readNamespacedPod(
+      client.metadata?.name as string,
+      config.namespace
+    )
+  ).body
+}
+
+export default async function initClient() {
+  const runner = await createRunner()
+
+  await DI.k8s.watch.watch(
+    `/apis/${runner.apiVersion}/namespaces/${runner.metadata.namespace}/botrunners`,
+    {
+      fieldSelector: `metadata.name=${runner.metadata.name}`,
+    },
+    (_type, _apiObj, obj: BotRunnerResource) => {
+      winston.debug(`runner object was changed`)
+    },
+    () => void 0
+  )
+  winston.info('Cerus bot runner is online')
 }

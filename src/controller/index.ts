@@ -1,6 +1,9 @@
+import { ok as assert } from 'assert'
 import { findPods } from '../kube/pod'
-import { DI } from '../di'
+import { findRunners } from '../kube/runner'
 import { spawnClient } from '../client'
+import config from '../config'
+import { DI } from '../di'
 
 export default async function initController() {
   const pods = await findPods()
@@ -12,7 +15,6 @@ export default async function initController() {
       pod.metadata.annotations['runner.cerusbots.com/type'] === 'controller'
     )
   })
-  console.log(controllers)
 
   const clients = pods.filter((pod) => {
     if (typeof pod.metadata !== 'object') return false
@@ -21,15 +23,22 @@ export default async function initController() {
   })
 
   if (clients.length === 0) clients.push(await spawnClient())
-  console.log(clients)
+
+  const runners = await findRunners()
 
   const bots = Object.fromEntries(
-    await Promise.all(
-      clients.map(async (client) => [
-        client.metadata?.name,
-        await DI.ipc.discoverBots(client.metadata?.name + '-client'),
-      ])
-    )
-  ) as Record<string, string[]>
+    runners.map((runner) => {
+      assert(typeof runner.metadata.annotations === 'object')
+      assert(
+        typeof runner.metadata.annotations['runner.cerusbots.com/owned-by'] ===
+          'string'
+      )
+      assert(typeof runner.spec === 'object')
+      return [
+        runner.metadata.annotations['runner.cerusbots.com/owned-by'],
+        runner.spec.bots,
+      ]
+    })
+  )
   console.log(bots)
 }

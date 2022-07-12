@@ -163,6 +163,60 @@ export const botMessageHookResource = (
     { provider, dependsOn }
   )
 
+export const botRunnerResource = (
+  config: Configuration,
+  provider?: k8s.Provider,
+  dependsOn?: pulumi.Resource[]
+) =>
+  new k8s.apiextensions.v1.CustomResourceDefinition(
+    'cerus-bot-runner-resource',
+    {
+      metadata: {
+        name: 'botrunners.cerusbots.com',
+        namespace: config.namespace,
+      },
+      spec: {
+        group: 'cerusbots.com',
+        names: {
+          categories: ['cerusbots'],
+          kind: 'BotRunner',
+          listKind: 'BotRunnerList',
+          plural: 'botrunners',
+          shortNames: ['botrnr'],
+          singular: 'botrunner',
+        },
+        scope: 'Namespaced',
+        versions: [
+          {
+            name: 'v1alpha1',
+            schema: {
+              openAPIV3Schema: deepmerge(baseResource, {
+                description:
+                  'BotRunner defines a namespaced instance of a bot runner.',
+                properties: {
+                  spec: {
+                    type: 'object',
+                    description:
+                      'BotRunnerSpec is a specification for the desired bot runner configuration',
+                    properties: {
+                      bots: {
+                        type: 'array',
+                        items: { type: 'string' },
+                      },
+                    },
+                    required: ['bots'],
+                  },
+                },
+              }),
+            },
+            served: true,
+            storage: true,
+          },
+        ],
+      },
+    }
+  )
+
 export default function crds(
   config: Configuration,
   provider?: k8s.Provider,
@@ -171,5 +225,6 @@ export default function crds(
   return [
     botComamndResource(config, provider, dependsOn),
     botMessageHookResource(config, provider, dependsOn),
+    botRunnerResource(config, provider, dependsOn),
   ]
 }

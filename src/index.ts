@@ -1,15 +1,17 @@
+import initClient from './client'
+import initController from './controller'
 import { getPodType } from './kube/pod'
 import winston from './providers/winston'
-import initController from './controller'
-import { init as initDI, DI } from './di'
+import { init as initDI } from './di'
 
 async function init() {
   await initDI()
+
   const type = await getPodType()
   if (type === 'controller') {
     await initController()
   } else {
-    winston.info('Cerus bot runner is online')
+    await initClient()
   }
 }
 
