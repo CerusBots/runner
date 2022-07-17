@@ -23,6 +23,33 @@ const baseResource: k8s.types.input.apiextensions.v1.JSONSchemaProps = {
   type: 'object',
 }
 
+const user: k8s.types.input.apiextensions.v1.JSONSchemaProps = {
+  type: 'object',
+  properties: {
+    discordID: {
+      type: 'string',
+    },
+    apiUID: {
+      type: 'string',
+    },
+  },
+  maxItems: 1,
+  minItems: 1,
+}
+
+const botTeamMember: k8s.types.input.apiextensions.v1.JSONSchemaProps = {
+  type: 'object',
+  properties: {
+    ...user.properties,
+    role: {
+      type: 'string',
+    },
+  },
+  required: ['role'],
+  maxItems: 2,
+  minItems: 2,
+}
+
 const botCode: k8s.types.input.apiextensions.v1.JSONSchemaProps = {
   description:
     'BotCode defines what code should be loaded into this particular bot resource.',
@@ -48,6 +75,70 @@ const botCode: k8s.types.input.apiextensions.v1.JSONSchemaProps = {
   maxItems: 1,
   minItems: 1,
 }
+
+const botCommand: k8s.types.input.apiextensions.v1.JSONSchemaProps = deepmerge(
+  baseResource,
+  {
+    description: 'BotCommand defines a namespaced command definition',
+    properties: {
+      spec: {
+        type: 'object',
+        description:
+          'BotCommandSpec is a specification for the desired bot configuration',
+        properties: {
+          description: {
+            type: 'string',
+          },
+          code: botCode,
+          name: {
+            type: 'string',
+          },
+        },
+        required: ['description', 'code', 'name'],
+      },
+    },
+  }
+)
+
+const botMessageHook: k8s.types.input.apiextensions.v1.JSONSchemaProps =
+  deepmerge(baseResource, {
+    description: 'BotMessageHook defines a namespaced message hook.',
+    properties: {
+      spec: {
+        type: 'object',
+        description:
+          'BotMessageHookSpec is a specification for the desired message hook configuration',
+        properties: {
+          code: botCode,
+          regex: {
+            type: 'string',
+            format: 'regex',
+          },
+        },
+        required: ['code', 'regex'],
+      },
+    },
+  })
+
+const botWebhook: k8s.types.input.apiextensions.v1.JSONSchemaProps = deepmerge(
+  baseResource,
+  {
+    description: 'BotWebhook defines a namespaced webhook.',
+    properties: {
+      spec: {
+        type: 'object',
+        description:
+          'BotWebhookSpec is a specification for the desired webhook configuration',
+        properties: {
+          code: botCode,
+          secret: {
+            type: 'string',
+          },
+        },
+      },
+    },
+  }
+)
 
 export const botComamndResource = (
   config: Configuration,
@@ -76,27 +167,7 @@ export const botComamndResource = (
           {
             name: 'v1alpha1',
             schema: {
-              openAPIV3Schema: deepmerge(baseResource, {
-                description:
-                  'BotCommand defines a namespaced command definition',
-                properties: {
-                  spec: {
-                    type: 'object',
-                    description:
-                      'BotCommandSpec is a specification for the desired bot configuration',
-                    properties: {
-                      description: {
-                        type: 'string',
-                      },
-                      code: botCode,
-                      name: {
-                        type: 'string',
-                      },
-                    },
-                    required: ['description', 'code', 'name'],
-                  },
-                },
-              }),
+              openAPIV3Schema: botCommand,
             },
             served: true,
             storage: true,
@@ -134,22 +205,182 @@ export const botMessageHookResource = (
           {
             name: 'v1alpha1',
             schema: {
+              openAPIV3Schema: botMessageHook,
+            },
+            served: true,
+            storage: true,
+          },
+        ],
+      },
+    },
+    { provider, dependsOn }
+  )
+
+export const botWebhookResource = (
+  config: Configuration,
+  provider?: k8s.Provider,
+  dependsOn?: pulumi.Resource[]
+) =>
+  new k8s.apiextensions.v1.CustomResourceDefinition(
+    'cerus-bot-webhook-resource',
+    {
+      metadata: {
+        name: 'botwebhooks.cerusbots.com',
+        namespace: config.namespace,
+      },
+      spec: {
+        group: 'cerusbots.com',
+        names: {
+          categories: ['cerusbots'],
+          kind: 'BotWebhook',
+          listKind: 'BotWebhookList',
+          plural: 'botwebhooks',
+          shortNames: ['botwebhk', 'botwhk'],
+          singular: 'botwebhook',
+        },
+        scope: 'Namespaced',
+        versions: [
+          {
+            name: 'v1alpha1',
+            schema: {
+              openAPIV3Schema: botWebhook,
+            },
+            served: true,
+            storage: true,
+          },
+        ],
+      },
+    },
+    { provider, dependsOn }
+  )
+
+export const botTeamMemberResource = (
+  config: Configuration,
+  provider?: k8s.Provider,
+  dependsOn?: pulumi.Resource[]
+) =>
+  new k8s.apiextensions.v1.CustomResourceDefinition(
+    'cerus-bot-teammember-resource',
+    {
+      metadata: {
+        name: 'botteammembers.cerusbots.com',
+        namespace: config.namespace,
+      },
+      spec: {
+        group: 'cerusbots.com',
+        names: {
+          categories: ['cerusbots'],
+          kind: 'BotTeamMember',
+          listKind: 'BotTeamMemberList',
+          plural: 'botteammembers',
+          shortNames: ['botteammbr', 'bottmbr'],
+          singular: 'botteammember',
+        },
+        scope: 'Namespaced',
+        versions: [
+          {
+            name: 'v1alpha1',
+            schema: {
+              openAPIV3Schema: botTeamMember,
+            },
+            served: true,
+            storage: true,
+          },
+        ],
+      },
+    },
+    { provider, dependsOn }
+  )
+
+export const botResource = (
+  config: Configuration,
+  provider?: k8s.Provider,
+  dependsOn?: pulumi.Resource[]
+) =>
+  new k8s.apiextensions.v1.CustomResourceDefinition(
+    'cerus-bot-resource',
+    {
+      metadata: {
+        name: 'bots.cerusbots.com',
+        namespace: config.namespace,
+      },
+      spec: {
+        group: 'cerusbots.com',
+        names: {
+          categories: ['cerusbots'],
+          kind: 'Bot',
+          listKind: 'BotList',
+          plural: 'bots',
+          shortNames: ['bt'],
+          singular: 'bot',
+        },
+        scope: 'Namespaced',
+        versions: [
+          {
+            name: 'v1alpha1',
+            schema: {
               openAPIV3Schema: deepmerge(baseResource, {
-                description:
-                  'BotMessageHook defines a namespaced message hook.',
                 properties: {
                   spec: {
                     type: 'object',
-                    description:
-                      'BotMessageHookSpec is a specification for the desired bot configuration',
                     properties: {
-                      code: botCode,
-                      regex: {
+                      token: {
                         type: 'string',
-                        format: 'regex',
+                      },
+                      owner: user,
+                      intent: {
+                        type: 'array',
+                        items: { type: 'string' },
+                      },
+                      commands: {
+                        type: 'array',
+                        items: {
+                          type: 'object',
+                          properties: {
+                            spec: botCommand,
+                            ref: { type: 'string' },
+                          },
+                          maxItems: 1,
+                          minItems: 1,
+                        },
+                      },
+                      messageHooks: {
+                        type: 'array',
+                        items: {
+                          type: 'object',
+                          properties: {
+                            spec: botMessageHook,
+                            ref: { type: 'string' },
+                          },
+                          maxItems: 1,
+                          minItems: 1,
+                        },
+                      },
+                      webhooks: {
+                        type: 'array',
+                        items: {
+                          type: 'object',
+                          properties: {
+                            spec: botWebhook,
+                            ref: { type: 'string' },
+                          },
+                          maxItems: 1,
+                          minItems: 1,
+                        },
+                      },
+                      members: {
+                        type: 'array',
+                        items: {
+                          type: 'object',
+                          properties: {
+                            spec: botTeamMember,
+                            ref: { type: 'string' },
+                          },
+                          maxItems: 1,
+                          minItems: 1,
+                        },
                       },
                     },
-                    required: ['code', 'regex'],
                   },
                 },
               }),
@@ -225,6 +456,9 @@ export default function crds(
   return [
     botComamndResource(config, provider, dependsOn),
     botMessageHookResource(config, provider, dependsOn),
+    botWebhookResource(config, provider, dependsOn),
+    botTeamMemberResource(config, provider, dependsOn),
+    botResource(config, provider, dependsOn),
     botRunnerResource(config, provider, dependsOn),
   ]
 }
