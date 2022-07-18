@@ -1,3 +1,4 @@
+import { ok as assert } from 'assert'
 import cluster, { Worker } from 'cluster'
 import { hostname } from 'os'
 import { BotRunnerResource } from '@cerusbots/common/dist/k8s'
@@ -41,6 +42,7 @@ export async function spawnClient() {
   if (type === 'client')
     throw new Error('Only clients may be spawned by controllers')
 
+  assert(typeof pod.spec === 'object', 'pod.spec must be an object')
   const client = (
     await DI.k8s.api.core.createNamespacedPod(config.namespace, {
       metadata: {

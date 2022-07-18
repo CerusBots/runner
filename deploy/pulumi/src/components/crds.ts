@@ -65,11 +65,10 @@ const botCode: k8s.types.input.apiextensions.v1.JSONSchemaProps = {
     fromRepo: {
       type: 'object',
       properties: {
-        path: { type: 'string' },
-        repo: { type: 'string' },
+        url: { type: 'string' },
         ref: { type: 'string' },
       },
-      required: ['path', 'repo', 'ref'],
+      required: ['url'],
     },
   },
   maxItems: 1,
@@ -445,7 +444,8 @@ export const botRunnerResource = (
           },
         ],
       },
-    }
+    },
+    { provider, dependsOn }
   )
 
 export default function crds(

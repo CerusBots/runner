@@ -2,8 +2,6 @@ import { ok as assert } from 'assert'
 import { findPods } from '../kube/pod'
 import { findRunners } from '../kube/runner'
 import { spawnClient } from '../client'
-import config from '../config'
-import { DI } from '../di'
 
 export default async function initController() {
   const pods = await findPods()
