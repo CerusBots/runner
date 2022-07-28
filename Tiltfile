@@ -13,4 +13,4 @@ docker_build('ghcr.io/cerusbots/runner:latest', '.', dockerfile='./Dockerfile.de
   run('npm run build', trigger='submodules/common')
 ])
 
-pulumi_resource('cerus-runner', stack='dev', dir='deploy/pulumi', image_deps=['ghcr.io/cerusbots/runner:latest'], image_configs=['image'], labels=['cerus'])
+pulumi_resource('cerus-runner', stack='CerusBots/runner/dev', dir='deploy/pulumi', image_deps=['ghcr.io/cerusbots/runner:latest'], image_configs=['image'], labels=['cerus'])

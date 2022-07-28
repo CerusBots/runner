@@ -29,7 +29,7 @@ const user: k8s.types.input.apiextensions.v1.JSONSchemaProps = {
     discordID: {
       type: 'string',
     },
-    apiUID: {
+    auth0ID: {
       type: 'string',
     },
   },
@@ -62,17 +62,9 @@ const botCode: k8s.types.input.apiextensions.v1.JSONSchemaProps = {
       },
       required: ['value'],
     },
-    fromRepo: {
-      type: 'object',
-      properties: {
-        url: { type: 'string' },
-        ref: { type: 'string' },
-      },
-      required: ['url'],
-    },
   },
   maxItems: 1,
-  minItems: 1,
+  minItems: 0,
 }
 
 const botCommand: k8s.types.input.apiextensions.v1.JSONSchemaProps = deepmerge(
@@ -130,6 +122,9 @@ const botWebhook: k8s.types.input.apiextensions.v1.JSONSchemaProps = deepmerge(
           'BotWebhookSpec is a specification for the desired webhook configuration',
         properties: {
           code: botCode,
+          id: {
+            type: 'string',
+          },
           secret: {
             type: 'string',
           },
@@ -330,6 +325,21 @@ export const botResource = (
                       intent: {
                         type: 'array',
                         items: { type: 'string' },
+                      },
+                      repo: {
+                        type: 'object',
+                        properties: {
+                          url: {
+                            type: 'string',
+                          },
+                          depth: {
+                            type: 'number',
+                          },
+                          ref: {
+                            type: 'string',
+                          },
+                        },
+                        required: ['url'],
                       },
                       commands: {
                         type: 'array',

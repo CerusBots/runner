@@ -28,6 +28,7 @@
     "discord-api-types": "0.30.0",
     "discord.js": "file:submodules/discord.js",
     "emittery": "^0.11.0",
+    "ipaddr.js": "^2.0.1",
     "isomorphic-git": "^1.18.3",
     "kafkajs": "^1.16.0",
     "memfs": "^3.4.7",

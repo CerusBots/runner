@@ -15,6 +15,16 @@ export interface Configuration {
   image: string
   kafka: {
     brokers: string[]
+    storage: {
+      class: string
+      size: string
+    }
+  }
+  zookeeper: {
+    storage: {
+      class: string
+      size: string
+    }
   }
 }
 
@@ -28,6 +38,7 @@ export function createConfig(config: Config): Configuration {
   const sha = config.get('sha') || 'HEAD'
   const kubeConfigRaw = config.get('kubeconfig')
   const kubeConfig = kubeConfigRaw ? parse(kubeConfigRaw) : undefined
+  const storageClass = config.get('storage.class') || 'standard'
   const hasNamespaceRaw = config.getBoolean('hasNamespace')
   const hasNamespace =
     typeof hasNamespaceRaw === 'undefined' ? true : hasNamespaceRaw
@@ -48,6 +59,16 @@ export function createConfig(config: Config): Configuration {
         config.get('env.KAFKA_BROKERS') ||
         `cerus-kafka.${namespace}.svc.cluster.local:9092`
       ).split(','),
+      storage: {
+        class: config.get('kafka.storage.class') || storageClass,
+        size: config.get('kafka.storage.size') || '4Gi',
+      },
+    },
+    zookeeper: {
+      storage: {
+        class: config.get('zookeeper.storage.class') || storageClass,
+        size: config.get('zookeeper.storage.size') || '1Gi',
+      },
     },
   }
   return {

@@ -1,7 +1,7 @@
 import { ok as assert } from 'assert'
 import cluster, { Worker } from 'cluster'
 import { hostname } from 'os'
-import { BotRunnerResource } from '@cerusbots/common/dist/k8s'
+import { BotRunnerResource, BotResource } from '@cerusbots/common/dist/k8s'
 import { getPodType, getCurrentPod } from '../kube/pod'
 import { createRunner } from '../kube/runner'
 import winston from '../providers/winston'
@@ -108,22 +108,74 @@ export default async function initClient() {
           delete bots[name]
         }
 
-        for (const name of addedBots) {
-          const worker = cluster.fork({
-            BOT_NAME: name,
-          })
+        Promise.all(
+          addedBots.map((name) =>
+            DI.k8s.api.customObjects
+              .getNamespacedCustomObject(
+                'cerusbots.com',
+                'v1alpha1',
+                config.namespace,
+                'bots',
+                name
+              )
+              .then(({ body }) => {
+                const bot = body as BotResource
+                const worker = cluster.fork({
+                  BOT_NAME: bot.metadata.name,
+                  API_VERSION: bot.apiVersion,
+                  NAMESPACE: bot.metadata.namespace,
+                })
 
-          worker.on('exit', () => {
-            winston.debug(`bot ${name} has shut down`)
-            delete bots[name]
-          })
+                worker.on('exit', () => {
+                  winston.debug(`bot ${name} has shut down`)
+                  delete bots[name]
+                })
 
-          worker.on('online', () => {
-            winston.debug(`bot ${name} is online`)
-            bots[name] = { worker }
+                worker.on('online', () => {
+                  winston.debug(`bot ${name} is online`)
+                  bots[name] = { worker }
+                })
+                return [name, true]
+              })
+              .catch((e) => {
+                winston.error(e)
+                return [name, false]
+              })
+          )
+        )
+          .then((botEntries) => {
+            assert(typeof obj.spec === 'object')
+            const failedBots = Object.keys(
+              Object.fromEntries(
+                botEntries.filter(([_name, isSuccesful]) => !isSuccesful)
+              )
+            )
+            winston.debug(`failed to start up ${failedBots.join(', ')}`)
+            obj.spec.bots = Object.keys(
+              Object.fromEntries(
+                botEntries.filter(([_name, isSuccessful]) => isSuccessful)
+              )
+            )
+            return DI.k8s.api.customObjects.patchNamespacedCustomObject(
+              'cerusbots.com',
+              'v1alpha1',
+              config.namespace,
+              'botrunners',
+              obj.metadata.name as string,
+              obj
+            )
           })
-        }
+          .catch((e) => winston.error(e))
       }
+    },
+    () => void 0
+  )
+
+  await DI.k8s.watch.watch(
+    `/apis/${runner.apiVersion}/namespaces/${runner.metadata.namespace}/bots`,
+    {},
+    (type, apiObj, obj) => {
+      console.log(type, apiObj, obj)
     },
     () => void 0
   )
