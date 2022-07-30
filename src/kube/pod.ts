@@ -44,8 +44,8 @@ export async function getCurrentPod() {
     .body
 }
 
-export async function getPodType() {
-  const pod = await getCurrentPod()
+export async function getPodType(pod?: V1Pod) {
+  if (typeof pod === 'undefined') pod = await getCurrentPod()
   assert(typeof pod.metadata === 'object', 'pod.metadata is undefined')
   assert(
     typeof pod.metadata.annotations === 'object',

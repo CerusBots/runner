@@ -1,4 +1,4 @@
-import { Config } from '@pulumi/pulumi'
+import { Config, Output, secret } from '@pulumi/pulumi'
 import { parse } from 'yaml'
 import { githubImage } from './utils/image'
 
@@ -13,6 +13,17 @@ export interface Configuration {
   sha: string
   hasNamespace: boolean
   image: string
+  botImage: string
+  minio: {
+    user: {
+      name: string
+      password: Output<string>
+    }
+    storage: {
+      class: string
+      size: string
+    }
+  }
   kafka: {
     brokers: string[]
     storage: {
@@ -54,6 +65,17 @@ export function createConfig(config: Config): Configuration {
     sha,
     hasNamespace,
     image: '',
+    botImage: '',
+    minio: {
+      user: {
+        name: config.get('minio.user.name') || 'admin',
+        password: config.getSecret('minio.privateKey') || secret('1234567890'),
+      },
+      storage: {
+        class: config.get('minio.storage.class') || storageClass,
+        size: config.get('minio.storage.size') || '12Gi',
+      },
+    },
     kafka: {
       brokers: (
         config.get('env.KAFKA_BROKERS') ||
@@ -74,5 +96,6 @@ export function createConfig(config: Config): Configuration {
   return {
     ...cfg,
     image: config.get('image') || githubImage(cfg, 'runner'),
+    botImage: config.get('bot.image') || githubImage(cfg, 'bot'),
   }
 }
