@@ -305,7 +305,7 @@ export const statefulSets = (
                 },
               },
               spec: {
-                serviceAccount: name,
+                serviceAccount: name.replace('-s3', '-sa'),
                 tolerations: [
                   {
                     key: 'node-role.kubernetes.io/master',
