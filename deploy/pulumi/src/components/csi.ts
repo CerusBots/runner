@@ -545,5 +545,5 @@ export default function csi(
     daemonSetRes,
     secretRes,
   ])
-  return storageClassRes
+  return [storageClassRes]
 }
