@@ -2,6 +2,42 @@ import * as k8s from '@pulumi/kubernetes'
 import * as pulumi from '@pulumi/pulumi'
 import { Configuration } from '../config'
 
+export const pv = (
+  config: Configuration,
+  provider?: k8s.Provider,
+  dependsOn?: pulumi.Resource[]
+) =>
+  new k8s.core.v1.PersistentVolume(
+    'cerus-runner',
+    {
+      metadata: {
+        name: 'cerus-runner',
+        namespace: config.namespace,
+        labels: {
+          app: 'cerus-runner',
+        },
+      },
+      spec: {
+        accessModes: ['ReadWriteMany'],
+        capacity: {
+          storage: '5Gi',
+        },
+        storageClassName: 'rclone',
+        csi: {
+          driver: 'csi-rclone',
+          volumeHandle: 'data-id',
+        },
+        claimRef: {
+          kind: 'PersistentVolumeClaim',
+          namespace: config.namespace,
+          name: 'cerus-runner',
+          apiVersion: 'v1',
+        },
+      },
+    },
+    { provider, dependsOn }
+  )
+
 export const pvc = (
   config: Configuration,
   provider?: k8s.Provider,
@@ -13,13 +49,21 @@ export const pvc = (
       metadata: {
         namespace: config.namespace,
         name: 'cerus-runner',
+        labels: {
+          app: 'cerus-runner',
+        },
       },
       spec: {
         accessModes: ['ReadWriteMany'],
-        storageClassName: 'cerus-csi-s3',
+        storageClassName: 'rclone',
         resources: {
           requests: {
             storage: '5Gi',
+          },
+        },
+        selector: {
+          matchLabels: {
+            app: 'cerus-runner',
           },
         },
       },
@@ -101,7 +145,7 @@ export const deployment = (
   dependsOn?: pulumi.Resource[]
 ) =>
   new k8s.apps.v1.Deployment(
-    'cerus-runner-controller',
+    'cerus-runner',
     {
       metadata: {
         labels: {
@@ -191,7 +235,8 @@ export default function runner(
     serviceAccountRes,
     roleRes,
   ])
-  const pvcRes = pvc(config, provider, dependsOn)
+  const pvRes = pv(config, provider, dependsOn)
+  const pvcRes = pvc(config, provider, [...dependsOn, pvRes])
   const deploymentRes = deployment(config, provider, [
     ...dependsOn,
     serviceAccountRes,
