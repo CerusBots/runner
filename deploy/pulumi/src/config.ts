@@ -14,6 +14,30 @@ export interface Configuration {
   hasNamespace: boolean
   image: string
   botImage: string
+  storage: {
+    size: string
+  }
+  db: {
+    root: {
+      password: string | Output<string>
+    }
+    user: {
+      password: string | Output<string>
+      name: string
+    }
+    name: string
+    storage: {
+      class: string
+      size: string
+    }
+  }
+  cache: {
+    password: string | Output<string>
+    storage: {
+      class: string
+      size: string
+    }
+  }
   minio: {
     user: {
       name: string
@@ -66,6 +90,30 @@ export function createConfig(config: Config): Configuration {
     hasNamespace,
     image: '',
     botImage: '',
+    storage: {
+      size: config.get('storage.size') || '6Gi',
+    },
+    db: {
+      root: {
+        password: config.getSecret('db.root.password') || 'db',
+      },
+      user: {
+        name: config.get('db.root.username') || 'runner',
+        password: config.getSecret('db.root.password') || 'db',
+      },
+      name: config.get('db.name') || 'runner',
+      storage: {
+        class: config.get('db.storage.class') || storageClass,
+        size: config.get('db.storage.size') || '4Gi',
+      },
+    },
+    cache: {
+      password: config.getSecret('env.REDIS_PASSWORD') || 'cache',
+      storage: {
+        class: config.get('cache.storage.class') || storageClass,
+        size: config.get('cache.storage.size') || '1Gi',
+      },
+    },
     minio: {
       user: {
         name: config.get('minio.user.name') || 'admin',

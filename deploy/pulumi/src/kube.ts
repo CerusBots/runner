@@ -2,7 +2,11 @@ import * as k8s from '@pulumi/kubernetes'
 import * as pulumi from '@pulumi/pulumi'
 import { Configuration } from './config'
 
+import adminer from './components/adminer'
+import cache from './components/cache'
 import csi from './components/csi'
+import db from './components/db'
+import ingress from './components/ingress'
 import kafka from './components/kafka'
 import kowl from './components/kowl'
 import minio from './components/minio'
@@ -16,15 +20,21 @@ export function createKube(config: Configuration, provider?: k8s.Provider) {
   const kafkaRes = kafka(config, provider, dependsOn)
   const minioRes = minio(config, provider, dependsOn)
   const csiRes = csi(config, provider, [...dependsOn, ...minioRes])
+  const dbRes = db(config, provider, dependsOn)
+  const cacheRes = cache(config, provider, dependsOn)
   const runnerRes = runner(config, provider, [
     ...dependsOn,
     ...kafkaRes,
     ...minioRes,
     ...csiRes,
+    ...dbRes,
+    ...cacheRes,
   ])
-  const baseRes = [...dependsOn, ...runnerRes]
+  const ingressRes = ingress(config, provider, [...dependsOn, ...runnerRes])
+  const baseRes = [...dependsOn, ...runnerRes, ingressRes]
   if (config.dev) {
     const kowlRes = kowl(config, provider, [...dependsOn, ...kafkaRes])
+    const adminerRes = adminer(config, provider, [...dependsOn, ...dbRes])
     return [...baseRes, ...kowlRes]
   }
   return baseRes

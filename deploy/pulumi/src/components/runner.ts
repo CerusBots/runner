@@ -2,6 +2,31 @@ import * as k8s from '@pulumi/kubernetes'
 import * as pulumi from '@pulumi/pulumi'
 import { Configuration } from '../config'
 
+export const secret = (
+  config: Configuration,
+  provider?: k8s.Provider,
+  dependsOn?: pulumi.Resource[]
+) =>
+  new k8s.core.v1.Secret(
+    'cerus-runner-secrets',
+    {
+      metadata: {
+        labels: {
+          app: 'cerus-runner',
+        },
+        name: 'cerus-runner-secrets',
+        namespace: config.namespace,
+      },
+      stringData: {
+        MYSQL_USER: config.db.user.name,
+        MYSQL_PASSWORD: config.db.user.password,
+        MYSQL_DATABASE: config.db.name,
+        REDIS_PASSWORD: config.cache.password,
+      },
+    },
+    { provider, dependsOn }
+  )
+
 export const pv = (
   config: Configuration,
   provider?: k8s.Provider,
@@ -20,12 +45,12 @@ export const pv = (
       spec: {
         accessModes: ['ReadWriteMany'],
         capacity: {
-          storage: '5Gi',
+          storage: config.storage.size,
         },
         storageClassName: 'rclone',
         csi: {
           driver: 'csi-rclone',
-          volumeHandle: 'data-id',
+          volumeHandle: 'cerus-runner',
         },
         claimRef: {
           kind: 'PersistentVolumeClaim',
@@ -58,7 +83,7 @@ export const pvc = (
         storageClassName: 'rclone',
         resources: {
           requests: {
-            storage: '5Gi',
+            storage: config.storage.size,
           },
         },
         selector: {
@@ -198,7 +223,16 @@ export const deployment = (
                     name: 'STORE_PATH',
                     value: '/mnt/runner',
                   },
+                  {
+                    name: 'MYSQL_HOST',
+                    value: `cerus-db-mariadb-primary.${config.namespace}.svc.cluster.local:3306`,
+                  },
+                  {
+                    name: 'REDIS_HOST',
+                    value: 'cerus-runner-cache-redis-master',
+                  },
                 ],
+                envFrom: [{ secretRef: { name: 'cerus-runner-secrets' } }],
                 volumeMounts: [
                   {
                     name: 'cerus-runner',
@@ -237,12 +271,14 @@ export default function runner(
   ])
   const pvRes = pv(config, provider, dependsOn)
   const pvcRes = pvc(config, provider, [...dependsOn, pvRes])
+  const secretRes = secret(config, provider, dependsOn)
   const deploymentRes = deployment(config, provider, [
     ...dependsOn,
     serviceAccountRes,
     roleRes,
     roleBindingRes,
     pvcRes,
+    secretRes,
   ])
   return [serviceAccountRes, roleRes, roleBindingRes, deploymentRes]
 }
