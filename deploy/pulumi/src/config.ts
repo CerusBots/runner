@@ -13,6 +13,7 @@ export interface Configuration {
   sha: string
   hasNamespace: boolean
   image: string
+  domain: string
   botImage: string
   storage: {
     size: string
@@ -72,6 +73,7 @@ export function createConfig(config: Config): Configuration {
   const version = config.get('version') || 'latest'
   const sha = config.get('sha') || 'HEAD'
   const kubeConfigRaw = config.get('kubeconfig')
+  const domain = config.get('host') || 'cerusbots.' + (dev ? 'test' : 'com')
   const kubeConfig = kubeConfigRaw ? parse(kubeConfigRaw) : undefined
   const storageClass = config.get('storage.class') || 'standard'
   const hasNamespaceRaw = config.getBoolean('hasNamespace')
@@ -88,6 +90,7 @@ export function createConfig(config: Config): Configuration {
     version,
     sha,
     hasNamespace,
+    domain,
     image: '',
     botImage: '',
     storage: {
@@ -98,8 +101,8 @@ export function createConfig(config: Config): Configuration {
         password: config.getSecret('db.root.password') || 'db',
       },
       user: {
-        name: config.get('db.root.username') || 'runner',
-        password: config.getSecret('db.root.password') || 'db',
+        name: config.get('db.user.username') || 'runner',
+        password: config.getSecret('db.user.password') || 'db',
       },
       name: config.get('db.name') || 'runner',
       storage: {

@@ -6,7 +6,6 @@ import adminer from './components/adminer'
 import cache from './components/cache'
 import csi from './components/csi'
 import db from './components/db'
-import ingress from './components/ingress'
 import kafka from './components/kafka'
 import kowl from './components/kowl'
 import minio from './components/minio'
@@ -30,12 +29,11 @@ export function createKube(config: Configuration, provider?: k8s.Provider) {
     ...dbRes,
     ...cacheRes,
   ])
-  const ingressRes = ingress(config, provider, [...dependsOn, ...runnerRes])
-  const baseRes = [...dependsOn, ...runnerRes, ingressRes]
+  const baseRes = [...dependsOn, ...runnerRes]
   if (config.dev) {
     const kowlRes = kowl(config, provider, [...dependsOn, ...kafkaRes])
     const adminerRes = adminer(config, provider, [...dependsOn, ...dbRes])
-    return [...baseRes, ...kowlRes]
+    return [...baseRes, ...kowlRes, ...adminerRes]
   }
   return baseRes
 }

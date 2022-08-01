@@ -31,6 +31,23 @@ export const release = (
           persistence: {
             size: config.db.storage.size,
           },
+          service: {
+            type: 'NodePort',
+            nodePorts: {
+              mysql: 30000,
+            },
+          },
+        },
+        secondary: {
+          persistence: {
+            size: config.db.storage.size,
+          },
+          service: {
+            type: 'NodePort',
+            nodePorts: {
+              mysql: 30001,
+            },
+          },
         },
         metrics: {
           enabled: true,
